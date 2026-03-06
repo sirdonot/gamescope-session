@@ -1,10 +1,13 @@
 #!/bin/bash
 
+CONFIG_FILE="$HOME/.config/gamescope/gamescope.conf"
+source "$CONFIG_FILE"
+
 # If required, setting this variable will enable additional
 # options under settings in SteamOS mode, including the option 
 # to 'Automatically Set Resolution' option, which can be turned
 # off to set the resolution manually.
-#export GAMESCOPE_MODE_SAVE_FILE="$HOME/.config/gamescope/modes.cfg"
+export GAMESCOPE_MODE_SAVE_FILE="$HOME/.config/gamescope/modes.cfg"
 
 # Assume that MangoHud is not installed
 MANGOAPP_FLAG=""
@@ -20,6 +23,32 @@ else
     printf "[%s] [Info] Continuing without the '--mangoapp' flag.\n" "$0"
 fi
 
+# Window managers sets this to wayland but apps using Gamescope must use x11
+export XDG_SESSION_TYPE=x11
+
+# Force Qt applications to run under xwayland
+export QT_QPA_PLATFORM=xcb
+
+# Moves OpenGL command processing to a separate CPU thread instead of the main game thread.
+export mesa_glthread=true
+
+# Can reduce CPU use for apps that are known to be error free.
+export MESA_NO_ERROR=1
+
+# This should be used by default by gamescope. Cannot hurt to force it anyway.
+# Reported better framelimiting with this enabled
+export ENABLE_GAMESCOPE_WSI=1
+
+# Some environment variables by default (taken from Deck session)
+export SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS=0
+
+# Temporary crutch until dummy plane interactions / etc are figured out
+export GAMESCOPE_DISABLE_ASYNC_FLIPS=1
+
 gamescope \
     $MANGOAPP_FLAG \
-    -e -- steam -steamdeck -steamos3
+    -W $WIDTH -H $HEIGHT \
+    --nested-refresh $REFRESHRATE \
+    $ADPSYNC \
+    --steam \
+    -- steam -steamdeck -steamos3 &> "$HOME/.cache/gamescope-session"
